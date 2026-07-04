@@ -1,6 +1,6 @@
 {
   "name": "nexfpack",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "A tool for building single executable files from Node.js scripts or modules.",
   "license": "MIT",
   "repository": "https://github.com/nexfteam/Nexfpack",
@@ -10,6 +10,7 @@
   "homepage": "https://github.com/nexfteam/Nexfpack#readme",
   "author": "nexfteam",
   "type": "module",
+  "types": "index.d.mts",
   "main": "index.cjs",
   "module": "index.mjs",
   "exports": {
@@ -21,6 +22,16 @@
   "bin": {
     "nexfpack": "cli.mjs"
   },
+  "files": [
+    "index.cjs",
+    "index.mjs",
+    "cli.mjs",
+    "README.md",
+    "README-CN.md",
+    "LICENSE",
+    "index.d.mts",
+    "index.d.cts"
+  ],
   "scripts": {
     "compile": "tsc"
   },
