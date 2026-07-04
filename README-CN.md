@@ -1,5 +1,7 @@
 # Nexfpack
 
+语言: [English](https://github.com/nexfteam/Nexfpack/blob/main/README.md) | 简体中文(当前)
+
 一个用于将Node.js脚本或模块打包为单个可执行文件的工具。
 
 ## 安装

@@ -1,5 +1,7 @@
 # Nexfpack
 
+Language: English(now) | [简体中文](https://github.com/nexfteam/Nexfpack/blob/main/README-CN.md)
+
 A tool for packaging Node.js scripts or modules into a single executable file.
 
 ## Installation
