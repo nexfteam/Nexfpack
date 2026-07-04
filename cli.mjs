@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import nexfpack from "./index.mjs";
-import fs from "fs";
 
 const args = process.argv.slice(2);
 if(args.length === 0) {
@@ -31,8 +30,6 @@ if(configFilePath === "--help" || configFilePath === "-h") {
 
 `)
   console.log("Nexfpack - A tool for building single executable files from Node.js scripts or modules.");
-
-  console.log("Version: " + JSON.parse(fs.readFileSync("./package.json", "utf8")).version);
 
   const helpText = `
 Usage: nexfpack <config-file-path>
