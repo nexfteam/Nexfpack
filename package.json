@@ -1,6 +1,6 @@
 {
   "name": "nexfpack",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "A tool for building single executable files from Node.js scripts or modules.",
   "license": "MIT",
   "repository": "https://github.com/nexfteam/Nexfpack",
@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "copyfiles": "^2.4.1",
+    "create-nodew-exe": "^2.1.1",
     "modern-tar": "^0.7.6",
     "postject": "1.0.0-alpha.6"
   },

@@ -81,6 +81,7 @@ nexfpack(config);
 | name | string | 应用名称 | `nexfpack-app` |
 | root | string | 根目录 | 若使用配置文件，则为文件所在目录，否则为 `process.cwd()` |
 | relativeRoot | boolean | `root` 是否为相对路径 | `false` |
+| noConsole | boolean | Windows 可执行文件是否隐藏控制台窗口 | `false` |
 | log | boolean | 是否打印日志 | `true` |
 | entry | string | 入口文件路径 | `index.js` |
 | output | string | 输出目录 | `dist` |

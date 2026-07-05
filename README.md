@@ -81,6 +81,7 @@ nexfpack(config);
 | name | string | Application name | `nexfpack-app` |
 | root | string | Root directory | The directory of the config file if specified, otherwise `process.cwd()` |
 | relativeRoot | boolean | Whether `root` is a relative path | `false` |
+| noConsole | boolean | Whether Windows executables should hide the console window | `false` |
 | log | boolean | Whether to print logs | `true` |
 | entry | string | Entry file path | `index.js` |
 | output | string | Output directory | `dist` |

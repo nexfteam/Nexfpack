@@ -3,6 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import os from 'os'
 import child_process from 'child_process'
+import { createNodewExe } from 'create-nodew-exe'
 import { pipeline } from 'stream/promises'
 import { packTar } from 'modern-tar/fs'
 // @ts-ignore
@@ -11,6 +12,7 @@ interface NexfpackOptions {
     name?: string,
     root?: string,
     relativeRoot?: boolean,
+    noConsole?: boolean,
     log?: boolean,
     entry?: string,
     output?: string,
@@ -26,6 +28,7 @@ interface NexfpackOptions {
 interface NexfpackOptionsFilled {
     name: string,
     root: string,
+    noConsole: boolean,
     log: boolean,
     entry: string,
     output: string,
@@ -66,6 +69,7 @@ async function fillOptions(options: NexfpackOptions): Promise<NexfpackOptionsFil
     return {
         name: options.name ?? 'nexfpack-app',
         root: cwd,
+        noConsole: options.noConsole ?? false,
         log: options.log ?? true,
         entry: path.resolve(cwd, options.entry ?? 'index.js'),
         output: path.resolve(cwd, options.output ?? 'dist'),
@@ -105,6 +109,7 @@ async function nexfpack(options: NexfpackOptions) {
         if(filledConfig.log) {
             console.log('▶ Start packing...');
             console.log('🧪 Tips: Nexfpack is very experimental. It may have some errors.')
+            console.log('   If you encounter any problems, please report them to https://github.com/Nexf-Team/nexfpack/issues')
         }
 
         if (!fs.existsSync(filledConfig.tempdir)) {
@@ -257,6 +262,12 @@ async function nexfpack(options: NexfpackOptions) {
         }
         fs.copyFileSync(process.execPath, exePath);
         await inject(exePath, 'NODE_SEA_BLOB', blobData, injectOptions);
+        if (filledConfig.noConsole) {
+            createNodewExe({
+                src: exePath,
+                dst: exePath,
+            });
+        }
         if (filledConfig.enabledSign) {
             console.log("⚠️ Sorry, we can't sign your executable file. Please sign it by yourself.");
         }
