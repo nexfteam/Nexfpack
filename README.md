@@ -89,6 +89,7 @@ nexfpack(config);
 | autoDeleteTempFiles | boolean | Whether to auto-delete temporary files | `true` |
 | ignorefile | string | Ignore file path, takes precedence over `ignore` | `.nexfpackignore` |
 | ignore | array | Files or directories to ignore, supports glob syntax | `[]` |
+| upxLevel | number | UPX compression level, range `0-9`, `0` means no UPX compression, ensure [UPX](https://github.com/upx/upx/releases/latest) is installed before using | `0` |
 | enabledSign | boolean | Whether to enable signing (not yet supported) | `false` |
 | autoRun | boolean | Whether to automatically run the packaged executable after build | `false` |
 

@@ -20,6 +20,7 @@ interface NexfpackOptions {
     autoDeleteTempFiles?: boolean,
     ignorefile?: string,
     ignore?: string[],
+    upxLevel?: number,
     enabledSign?: boolean,
     autoRun?: boolean,
     configFile?: string,
@@ -35,6 +36,7 @@ interface NexfpackOptionsFilled {
     tempdir: string,
     autoDeleteTempFiles: boolean,
     ignore: string[],
+    upxLevel: number,
     enabledSign: boolean,
     autoRun: boolean,
 }
@@ -76,6 +78,7 @@ async function fillOptions(options: NexfpackOptions): Promise<NexfpackOptionsFil
         tempdir: path.resolve(cwd, options.tempdir ?? '.nexfpack-temp'),
         autoDeleteTempFiles: options.autoDeleteTempFiles ?? true,
         ignore: getIgnores(),
+        upxLevel: options.upxLevel ?? 0,
         enabledSign: options.enabledSign ?? false,
         autoRun: options.autoRun ?? false,
     }
@@ -98,6 +101,7 @@ function listAllFiles(dir: string): string[] {
 }
 
 async function nexfpack(options: NexfpackOptions) {
+    const platform = os.platform();
     let config: NexfpackOptions;
     if (options.configFile) {
         config = JSON.parse(fs.readFileSync(options.configFile, 'utf8')) as NexfpackOptions;
@@ -252,21 +256,39 @@ async function nexfpack(options: NexfpackOptions) {
         const injectOptions: any = {
             sentinelFuse: NODE_SEA_FUSE,
         };
-        if (os.platform() === 'darwin') {
+        if (platform === 'darwin') {
             injectOptions.machoSegmentName = 'NODE_SEA';
         }
-        const ext = os.platform() === 'win32' ? '.exe' : '';
+        const ext = platform === 'win32' ? '.exe' : '';
         const exePath = path.join(filledConfig.output, filledConfig.name + ext);
         if (!fs.existsSync(filledConfig.output)) {
             fs.mkdirSync(filledConfig.output, { recursive: true });
         }
         fs.copyFileSync(process.execPath, exePath);
         await inject(exePath, 'NODE_SEA_BLOB', blobData, injectOptions);
-        if (filledConfig.noConsole) {
+        if (filledConfig.noConsole && platform === 'win32') {
             createNodewExe({
                 src: exePath,
                 dst: exePath,
             });
+        }
+        if (filledConfig.upxLevel > 0) {
+            const checkUpxResult = child_process.spawnSync("upx --version", { shell: true });
+            if (checkUpxResult.status === 0) {
+                if(filledConfig.log) {
+                    console.log('🗄️ Running upx compression...');
+                }
+                const upxResult = child_process.spawnSync(`upx -${filledConfig.upxLevel} \"${exePath}\"`, { stdio: 'inherit', shell: true });
+                if (upxResult.status !== 0) {
+                    if(filledConfig.log) {
+                        console.error('❌ Failed to compress executable file');
+                    }
+                    throw new Error('Failed to compress executable file');
+                }
+            } else {
+                console.log('⚠️ UPX not found, will skip compression');
+                console.log('   You can install UPX on https://github.com/upx/upx/releases/latest');
+            }
         }
         if (filledConfig.enabledSign) {
             console.log("⚠️ Sorry, we can't sign your executable file. Please sign it by yourself.");

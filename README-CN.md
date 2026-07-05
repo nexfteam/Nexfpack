@@ -89,6 +89,7 @@ nexfpack(config);
 | autoDeleteTempFiles | boolean | 是否自动删除临时文件 | `true` |
 | ignorefile | string | 忽略文件路径，优先级高于 `ignore` | `.nexfpackignore` |
 | ignore | array | 忽略的文件或目录，支持 glob 语法 | `[]` |
+| upxLevel | number | UPX 压缩等级，范围 `0-9`，`0` 表示不启用 UPX 压缩，使用 UPX 压缩前需确保已安装 [UPX](https://github.com/upx/upx/releases/latest) | `0` |
 | enabledSign | boolean | 是否启用签名（暂不支持） | `false` |
 | autoRun | boolean | 是否自动运行打包后的可执行文件 | `false` |
 

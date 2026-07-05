@@ -17,3 +17,5 @@ pnpm-workspace.yaml
 *.cjs
 !cli.mjs
 test.*
+upx
+upx.exe
