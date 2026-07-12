@@ -9,6 +9,9 @@ import { packTar } from 'modern-tar/fs'
 import * as resedit from 'resedit'
 // @ts-ignore
 import { inject } from 'postject';
+
+const NODE_SEA_FUSE = 'NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2';
+
 interface NexfpackOptions {
     name?: string,
     metadata?: Record<string, Record<string, string>>,
@@ -69,6 +72,13 @@ async function copyFiles(srcDir: string, destDir: string, ignore: string[] = [])
                 copyItem(srcItem, destItem);
             }
         } else if (stat.isFile()) {
+            const content = fs.readFileSync(src);
+            if (content.includes(NODE_SEA_FUSE)) {
+                console.warn(`⚠️ ${src} is included with NODE_SEA_FUSE.`);
+                console.warn(`   To avoid errors, will skip copying.`);
+                console.warn(`   If you will not need this file, you can add it to your ignore list.`);
+                return;
+            }
             const destParent = path.dirname(dest);
             if (!fs.existsSync(destParent)) {
                 fs.mkdirSync(destParent, { recursive: true });
@@ -292,7 +302,7 @@ async function nexfpack(options: NexfpackOptions): Promise<void> {
             }
             throw new Error('Failed to generate blob');
         }
-        const NODE_SEA_FUSE = 'NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2';
+
         const blobData = fs.readFileSync(path.join(filledConfig.tempdir, 'sea-prep.blob'));
         const injectOptions: any = {
             sentinelFuse: NODE_SEA_FUSE,
@@ -312,24 +322,6 @@ async function nexfpack(options: NexfpackOptions): Promise<void> {
                 src: exePath,
                 dst: exePath,
             });
-        }
-        if (filledConfig.upxLevel > 0) {
-            const checkUpxResult = child_process.spawnSync("upx --version", { shell: true });
-            if (checkUpxResult.status === 0) {
-                if (filledConfig.log) {
-                    console.log('🗄️ Running upx compression...');
-                }
-                const upxResult = child_process.spawnSync(`upx -${filledConfig.upxLevel} \"${exePath}\"`, { stdio: 'inherit', shell: true });
-                if (upxResult.status !== 0) {
-                    if (filledConfig.log) {
-                        console.error('❌ Failed to compress executable file');
-                    }
-                    throw new Error('Failed to compress executable file');
-                }
-            } else {
-                console.log('⚠️ UPX not found, will skip compression');
-                console.log('   You can install UPX on https://github.com/upx/upx/releases/latest');
-            }
         }
         if (filledConfig.metadata && platform === 'win32') {
             if (filledConfig.log) {
@@ -355,8 +347,26 @@ async function nexfpack(options: NexfpackOptions): Promise<void> {
             const newExeContent = rseExe.generate();
             fs.writeFileSync(exePath, Buffer.from(newExeContent));
         }
+        if (filledConfig.upxLevel > 0) {
+            const checkUpxResult = child_process.spawnSync("upx --version", { shell: true });
+            if (checkUpxResult.status === 0) {
+                if (filledConfig.log) {
+                    console.log('🗄️ Running upx compression...');
+                }
+                const upxResult = child_process.spawnSync(`upx -${filledConfig.upxLevel} \"${exePath}\"`, { stdio: 'inherit', shell: true });
+                if (upxResult.status !== 0) {
+                    if (filledConfig.log) {
+                        console.error('❌ Failed to compress executable file');
+                    }
+                    throw new Error('Failed to compress executable file');
+                }
+            } else {
+                console.warn('⚠️ UPX not found, will skip compression');
+                console.warn('   You can install UPX on https://github.com/upx/upx/releases/latest');
+            }
+        }
         if (filledConfig.enabledSign) {
-            console.log("⚠️ Sorry, we can't sign your executable file. Please sign it by yourself.");
+            console.warn("⚠️ Sorry, we can't sign your executable file. Please sign it by yourself.");
         }
         if (filledConfig.autoDeleteTempFiles) {
             if (filledConfig.log) {
