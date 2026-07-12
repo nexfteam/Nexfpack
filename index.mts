@@ -6,10 +6,12 @@ import child_process from 'child_process'
 import { createNodewExe } from 'create-nodew-exe'
 import { pipeline } from 'stream/promises'
 import { packTar } from 'modern-tar/fs'
+import * as resedit from 'resedit'
 // @ts-ignore
 import { inject } from 'postject';
 interface NexfpackOptions {
     name?: string,
+    metadata?: Record<string, Record<string, string>>,
     root?: string,
     relativeRoot?: boolean,
     noConsole?: boolean,
@@ -28,6 +30,7 @@ interface NexfpackOptions {
 
 interface NexfpackOptionsFilled {
     name: string,
+    metadata?: Record<string, Record<string, string>>,
     root: string,
     noConsole: boolean,
     log: boolean,
@@ -70,6 +73,7 @@ async function fillOptions(options: NexfpackOptions): Promise<NexfpackOptionsFil
     }
     return {
         name: options.name ?? 'nexfpack-app',
+        metadata: options.metadata,
         root: cwd,
         noConsole: options.noConsole ?? false,
         log: options.log ?? true,
@@ -110,7 +114,7 @@ async function nexfpack(options: NexfpackOptions) {
     }
     const filledConfig = await fillOptions(config);
     try {
-        if(filledConfig.log) {
+        if (filledConfig.log) {
             console.log('▶ Start packing...');
             console.log('🧪 Tips: Nexfpack is very experimental. It may have some errors.')
             console.log('   If you encounter any problems, please report them to https://github.com/nexfteam/nexfpack/issues')
@@ -123,7 +127,7 @@ async function nexfpack(options: NexfpackOptions) {
             fs.mkdirSync(filledConfig.tempdir, { recursive: true });
         }
 
-        if(filledConfig.log) {
+        if (filledConfig.log) {
             console.log('📄 Copying files...');
         }
 
@@ -134,7 +138,7 @@ async function nexfpack(options: NexfpackOptions) {
         await new Promise<void>((resolve, reject) => {
             copyfiles([filledConfig.root, path.join(filledConfig.tempdir, 'source-copy')], { up: 1, exclude: filledConfig.ignore }, (err) => {
                 if (err) {
-                    if(filledConfig.log) {
+                    if (filledConfig.log) {
                         console.error('❌ Failed to copy files:', err);
                     }
                     reject(err);
@@ -143,8 +147,8 @@ async function nexfpack(options: NexfpackOptions) {
                 }
             })
         })
-        
-        if(filledConfig.log) {
+
+        if (filledConfig.log) {
             console.log('📜 Packing source...');
         }
 
@@ -152,7 +156,7 @@ async function nexfpack(options: NexfpackOptions) {
         const writeStream = fs.createWriteStream(path.join(filledConfig.tempdir, 'source.tar'));
         await pipeline(tarStream, writeStream);
 
-        if(filledConfig.log) {
+        if (filledConfig.log) {
             console.log('📦 Packing executable...');
         }
         fs.writeFileSync(path.join(filledConfig.tempdir, 'package.json'), JSON.stringify({
@@ -166,7 +170,7 @@ async function nexfpack(options: NexfpackOptions) {
         }, null, 2));
         const installSpawnResult = child_process.spawnSync('npm install --omit=dev', { stdio: 'inherit', cwd: filledConfig.tempdir, shell: true });
         if (installSpawnResult.status !== 0) {
-            if(filledConfig.log) {
+            if (filledConfig.log) {
                 console.error('❌ Failed to install dependencies');
             }
             throw new Error('Failed to install dependencies');
@@ -246,7 +250,7 @@ async function nexfpack(options: NexfpackOptions) {
         fs.writeFileSync(path.join(filledConfig.tempdir, 'launcher.cjs'), launcherContent);
         const blobSpawnResult = child_process.spawnSync('node --experimental-sea-config sea-config.json', { stdio: 'inherit', cwd: filledConfig.tempdir, shell: true });
         if (blobSpawnResult.status !== 0) {
-            if(filledConfig.log) {
+            if (filledConfig.log) {
                 console.error('❌ Failed to generate blob');
             }
             throw new Error('Failed to generate blob');
@@ -275,12 +279,12 @@ async function nexfpack(options: NexfpackOptions) {
         if (filledConfig.upxLevel > 0) {
             const checkUpxResult = child_process.spawnSync("upx --version", { shell: true });
             if (checkUpxResult.status === 0) {
-                if(filledConfig.log) {
+                if (filledConfig.log) {
                     console.log('🗄️ Running upx compression...');
                 }
                 const upxResult = child_process.spawnSync(`upx -${filledConfig.upxLevel} \"${exePath}\"`, { stdio: 'inherit', shell: true });
                 if (upxResult.status !== 0) {
-                    if(filledConfig.log) {
+                    if (filledConfig.log) {
                         console.error('❌ Failed to compress executable file');
                     }
                     throw new Error('Failed to compress executable file');
@@ -290,26 +294,50 @@ async function nexfpack(options: NexfpackOptions) {
                 console.log('   You can install UPX on https://github.com/upx/upx/releases/latest');
             }
         }
+        if (filledConfig.metadata && platform === 'win32') {
+            if (filledConfig.log) {
+                console.log('✏️  Writing metadata...');
+            }
+            const exeContent = fs.readFileSync(exePath);
+            const rseExe = resedit.NtExecutable.from(exeContent, { ignoreCert: true });
+            const rseRes = resedit.NtExecutableResource.from(rseExe);
+            const rseVI = resedit.Resource.VersionInfo.createEmpty();
+            for (const lang in filledConfig.metadata) {
+                const langMetadata = filledConfig.metadata[Number(lang)];
+                for (const key in langMetadata) {
+                    if (key === "FileVersion") {
+                        rseVI.setFileVersion(langMetadata[key], Number(lang));
+                    } else if (key === "ProductVersion") {
+                        rseVI.setProductVersion(langMetadata[key], Number(lang));
+                    }
+                    rseVI.setStringValue({ lang: Number(lang), codepage: 1200 }, key, langMetadata[key]);
+                }
+            }
+            rseVI.outputToResourceEntries(rseRes.entries);
+            rseRes.outputResource(rseExe);
+            const newExeContent = rseExe.generate();
+            fs.writeFileSync(exePath, Buffer.from(newExeContent));
+        }
         if (filledConfig.enabledSign) {
             console.log("⚠️ Sorry, we can't sign your executable file. Please sign it by yourself.");
         }
         if (filledConfig.autoDeleteTempFiles) {
-            if(filledConfig.log) {
+            if (filledConfig.log) {
                 console.log('♻️ Deleting temp files...');
             }
             fs.rmSync(filledConfig.tempdir, { recursive: true, force: true });
         }
-        if (filledConfig.log){
+        if (filledConfig.log) {
             console.log('✅ Done!');
         }
         if (filledConfig.autoRun) {
-            if(filledConfig.log) {
+            if (filledConfig.log) {
                 console.log('🚀 Auto-run executable...');
             }
             child_process.spawnSync(exePath, { stdio: 'inherit', cwd: filledConfig.output, shell: true });
         }
     } catch (err) {
-        if(filledConfig.log) {
+        if (filledConfig.log) {
             console.error('❌ Nexfpack Failed:', err);
         }
         throw err;

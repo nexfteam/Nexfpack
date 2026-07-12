@@ -70,7 +70,15 @@ nexfpack(config);
     "entry": "index.js",
     "output": "dist",
     "ignore": [".gitignore", "README.md"],
-    "autoRun": true
+    "autoRun": true,
+    "metadata": {
+        "1033": {
+            "FileVersion": "1.0.0.0",
+            "ProductVersion": "1.0.0.0",
+            "CompanyName": "Your Company",
+            "FileDescription": "My Application"
+        }
+    }
 }
 ```
 
@@ -90,8 +98,87 @@ nexfpack(config);
 | ignorefile | string | 忽略文件路径，优先级高于 `ignore` | `.nexfpackignore` |
 | ignore | array | 忽略的文件或目录，支持 glob 语法 | `[]` |
 | upxLevel | number | UPX 压缩等级，范围 `0-9`，`0` 表示不启用 UPX 压缩，使用 UPX 压缩前需确保已安装 [UPX](https://github.com/upx/upx/releases/latest) | `0` |
+| metadata | Record&lt;string, Record&lt;string, string&gt;&gt; | **仅 Windows** 可执行文件元数据。详见 “元数据” 章节 | `undefined` |
 | enabledSign | boolean | 是否启用签名（暂不支持） | `false` |
 | autoRun | boolean | 是否自动运行打包后的可执行文件 | `false` |
+
+## 元数据
+
+`metadata` 选项允许您为打包后的应用程序设置 Windows 可执行文件元数据（版本信息）。这些信息会显示在 Windows 的文件属性对话框中。
+
+### 结构
+
+`metadata` 选项是一个嵌套对象，其中：
+
+- **外层键**是语言 ID（LCID），例如 `1033` 表示英语，`2052` 表示中文
+- **内层键**是元数据字段名
+- **值**是该字段的字符串内容
+
+### 支持的字段
+
+| 字段 | 描述 |
+| --- | --- |
+| `FileVersion` | 文件版本号（例如 `1.0.0.0`） |
+| `ProductVersion` | 产品版本号（例如 `1.0.0.0`） |
+| `CompanyName` | 公司名称 |
+| `FileDescription` | 文件描述 |
+| `ProductName` | 产品名称 |
+| `LegalCopyright` | 版权信息 |
+| `LegalTrademarks` | 商标信息 |
+| `OriginalFilename` | 原始文件名 |
+| `InternalName` | 内部名称 |
+| `Comments` | 注释 |
+| `PrivateBuild` | 私有版本信息 |
+| `SpecialBuild` | 特殊版本信息 |
+
+### 示例
+
+```json
+{
+    "metadata": {
+        "1033": {
+            "FileVersion": "1.0.0.0",
+            "ProductVersion": "1.0.0.0",
+            "CompanyName": "Your Company",
+            "FileDescription": "My Application",
+            "ProductName": "My Application",
+            "LegalCopyright": "Copyright (c) 2026 Your Company"
+        },
+        "2052": {
+            "FileVersion": "1.0.0.0",
+            "ProductVersion": "1.0.0.0",
+            "CompanyName": "你的公司",
+            "FileDescription": "我的应用",
+            "ProductName": "我的应用",
+            "LegalCopyright": "版权所有 (c) 2026 你的公司"
+        }
+    }
+}
+```
+
+### 语言 ID（LCID）
+
+> **注：** 这是常见 LCID 的部分列表。Microsoft Windows 支持更多语言 ID。完整列表请参考 [Microsoft 文档](https://learn.microsoft.com/zh-cn/openspecs/windows_protocols/ms-lcid/70feba9f-294e-491e-b6eb-56532684c37f)。
+
+| LCID | 语言 & 区域 |
+| --- | --- |
+| `1033` | 英语（美国） |
+| `2057` | 英语（英国） |
+| `3081` | 英语（澳大利亚） |
+| `4105` | 英语（加拿大） |
+| `6153` | 英语（新西兰） |
+| `2052` | 简体中文（中国大陆） |
+| `1028` | 繁体中文（中国台湾） |
+| `3076` | 繁体中文（中国香港） |
+| `5124` | 繁体中文（中国澳门） |
+| `1031` | 德语（德国） |
+| `1036` | 法语（法国） |
+| `1040` | 意大利语（意大利） |
+| `1041` | 日语（日本） |
+| `1042` | 韩语（韩国） |
+| `1043` | 荷兰语（荷兰） |
+| `1045` | 波兰语（波兰） |
+| `1053` | 瑞典语（瑞典） |
 
 ## 环境要求
 
