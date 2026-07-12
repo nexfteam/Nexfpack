@@ -113,7 +113,7 @@ async function nexfpack(options: NexfpackOptions) {
         if(filledConfig.log) {
             console.log('▶ Start packing...');
             console.log('🧪 Tips: Nexfpack is very experimental. It may have some errors.')
-            console.log('   If you encounter any problems, please report them to https://github.com/Nexf-Team/nexfpack/issues')
+            console.log('   If you encounter any problems, please report them to https://github.com/nexfteam/nexfpack/issues')
         }
 
         if (!fs.existsSync(filledConfig.tempdir)) {
