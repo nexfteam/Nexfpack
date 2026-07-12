@@ -1,5 +1,5 @@
-import copyfiles from 'copyfiles'
 import fs from 'fs'
+import { minimatch } from 'minimatch'
 import path from 'path'
 import os from 'os'
 import child_process from 'child_process'
@@ -44,6 +44,54 @@ interface NexfpackOptionsFilled {
     autoRun: boolean,
 }
 
+async function copyFiles(srcDir: string, destDir: string, ignore: string[] = []): Promise<void> {
+    if (!fs.existsSync(destDir)) {
+        fs.mkdirSync(destDir, { recursive: true });
+    }
+
+    function shouldIgnore(relPath: string): boolean {
+        return ignore.some(pattern =>
+            minimatch(relPath, pattern, { dot: true, matchBase: true })
+        );
+    }
+
+    function copyItem(src: string, dest: string): void {
+        const relPath = path.relative(srcDir, src);
+        if (shouldIgnore(relPath)) return;
+
+        const stat = fs.lstatSync(src);
+
+        if (stat.isDirectory()) {
+            const items = fs.readdirSync(src);
+            for (const item of items) {
+                const srcItem = path.join(src, item);
+                const destItem = path.join(dest, item);
+                copyItem(srcItem, destItem);
+            }
+        } else if (stat.isFile()) {
+            const destParent = path.dirname(dest);
+            if (!fs.existsSync(destParent)) {
+                fs.mkdirSync(destParent, { recursive: true });
+            }
+            fs.cpSync(src, dest);
+        } else if (stat.isSymbolicLink()) {
+            const realPath = fs.realpathSync(src);
+            const destParent = path.dirname(dest);
+            if (!fs.existsSync(destParent)) {
+                fs.mkdirSync(destParent, { recursive: true });
+            }
+            fs.cpSync(realPath, dest, { recursive: true, force: true });
+        }
+    }
+
+    const items = fs.readdirSync(srcDir);
+    for (const item of items) {
+        const srcItem = path.join(srcDir, item);
+        const destItem = path.join(destDir, item);
+        copyItem(srcItem, destItem);
+    }
+}
+
 async function fillOptions(options: NexfpackOptions): Promise<NexfpackOptionsFilled> {
     let cwd: string;
     if (options.root && !options.relativeRoot) {
@@ -56,7 +104,7 @@ async function fillOptions(options: NexfpackOptions): Promise<NexfpackOptionsFil
     if (options.root && options.relativeRoot) {
         cwd = path.resolve(cwd, options.root);
     }
-    function getIgnores() {
+    function getIgnores(): string[] {
         if (options.ignorefile) {
             return fs.readFileSync(path.resolve(cwd, options.ignorefile), 'utf8').split('\n').map(line => {
                 return line.split('#')[0].trim();
@@ -104,7 +152,7 @@ function listAllFiles(dir: string): string[] {
     return result;
 }
 
-async function nexfpack(options: NexfpackOptions) {
+async function nexfpack(options: NexfpackOptions): Promise<void> {
     const platform = os.platform();
     let config: NexfpackOptions;
     if (options.configFile) {
@@ -135,18 +183,7 @@ async function nexfpack(options: NexfpackOptions) {
             fs.mkdirSync(path.join(filledConfig.tempdir, 'source-copy'), { recursive: true });
         }
 
-        await new Promise<void>((resolve, reject) => {
-            copyfiles([filledConfig.root, path.join(filledConfig.tempdir, 'source-copy')], { up: 1, exclude: filledConfig.ignore }, (err) => {
-                if (err) {
-                    if (filledConfig.log) {
-                        console.error('❌ Failed to copy files:', err);
-                    }
-                    reject(err);
-                } else {
-                    resolve();
-                }
-            })
-        })
+        await copyFiles(filledConfig.root, path.join(filledConfig.tempdir, 'source-copy'), filledConfig.ignore);
 
         if (filledConfig.log) {
             console.log('📜 Packing source...');
